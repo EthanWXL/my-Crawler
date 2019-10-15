@@ -22,91 +22,72 @@ import java.util.Set;
  * @author sentry
  */
 public class Main {
-
     public static void main(String[] args) throws IOException, SQLException {
-        //待处理的连接池
-        List<String> linkPool = new ArrayList<>();
-        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:/Software/Java/Intellij/Java_learning/XDML/Crawler/my-Crawler/news",
-                "root", "root");
-        PreparedStatement statement = null;
-        try {
-            statement = conn.prepareStatement("select link FROM LINKS_TO_BE_PROCESSED");
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-                linkPool.add(resultSet.getString(1));
-
-            }
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-        }
-        //已经处理的连接池
-        try {
-            statement = conn.prepareStatement("select link FROM LINKS_ALREADY_PROCESSED");
-            ResultSet resultSet = statement.executeQuery();
-            while (resultSet.next()) {
-
-                statement = insertIntoDatabase(conn, statement, resultSet.getString(1), "INSERT INTO LINKS_ALREADY_PROCESSED(LINK)VALUES (?)");
-
-            }
-        } finally {
-            if (statement != null) {
-                statement.close();
-            }
-        }
+        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\news", "root", "root");
 
         while (true) {
+            //待处理的链接池
+            List<String> linkPool = getUrlFromDatabase(conn, "SELECT LINK FROM LINKS_TO_BE_PROCESSED");
+            //已经处理的连接池
+//            Set<String> processedLinks = new HashSet<>(getUrlFromDatabase(conn,"SELECT LINK FROM LINKS_ALREADY_PROCESSED"));
             if (linkPool.isEmpty()) {
                 break;
             }
-
+            //处理完成后从池子中删除
             String link = linkPool.remove(linkPool.size() - 1);
-            statement = insertIntoDatabase(conn, statement, link, "DELETE FROM LINKS_TO_BE_PROCESSED WHERE LINK = ?");
-            boolean processed = false;
-            try {
-                statement = conn.prepareStatement("select link FROM LINKS_ALREADY_PROCESSED");
-                ResultSet resultSet = statement.executeQuery();
-                while (resultSet.next()) {
-                    processed = false;
-                }
-            } finally {
-                if (statement != null) {
-                    statement.close();
-                }
-            }
-            if (processed) {
+            insertIntoDatabase(conn, link, "DELETE FROM LINKS_TO_BE_PROCESSED WHERE LINK = ?");
+            //询问已处理数据库有没有这个链接
+            if (isProcessedLink(conn, link)) {
                 continue;
             }
             if (isValidLink(link)) {
                 Document doc = getAndParasHtml(link);
                 Elements links = doc.select("a");
                 if (!links.isEmpty()) {
-                    for (Element aTag : links) {
-                        String href = aTag.attr("href");
-                        statement = insertIntoDatabase(conn, statement, href, "INSERT INTO LINKS_TO_BE_PROCESSED(LINK) VALUES(?) ");
-                    }
+                    parseUrlsAndInsertIntoDatabase(conn, links);
                 }
                 storeIntoDatabaseIfItIsNewsPage(doc);
-                //把已经处理过的链接放入数据库
-                statement = insertIntoDatabase(conn, statement, link, "INSERT INTO LINKS_ALREADY_PROCESSED(LINK)VALUES (?)");
-
-
+                insertIntoDatabase(conn, link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
+//                processedLinks.add(link);
             }
         }
     }
 
-    private static PreparedStatement insertIntoDatabase(Connection conn, PreparedStatement statement, String href, String sql) throws SQLException {
-        try {
-            statement = conn.prepareStatement(sql);
-            statement.setString(1, href);
-            statement.executeUpdate();
-        } finally {
-            if (statement != null) {
-                statement.close();
+    private static void parseUrlsAndInsertIntoDatabase(Connection conn, Elements links) throws SQLException {
+        for (Element aTag : links) {
+            String href = aTag.attr("href");
+            insertIntoDatabase(conn, href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
+
+        }
+    }
+
+    private static boolean isProcessedLink(Connection conn, String link) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement("SELECT LINK FROM LINKS_ALREADY_PROCESSED WHERE LINK = ?")) {
+            statement.setString(1, link);
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                return true;
             }
         }
-        return statement;
+        return false;
+    }
+
+    private static void insertIntoDatabase(Connection conn, String href, String sql) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, href);
+            statement.executeUpdate();
+        }
+    }
+
+    private static List<String> getUrlFromDatabase(Connection conn, String sql) throws SQLException {
+        List<String> results = new ArrayList<>();
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                results.add(resultSet.getString(1));
+            }
+        }
+        return results;
     }
 
     private static void storeIntoDatabaseIfItIsNewsPage(Document doc) {
@@ -134,7 +115,7 @@ public class Main {
     }
 
     private static boolean isValidLink(String link) {
-        return link.contains("news.sina.cn") && link.contains("detail-") && !link.contains("passport") || "https://sina.cn".equals(link);
+        return link.contains("news.sina.cn") && !link.contains("passport") || "https://sina.cn".equals(link);
     }
 }
 
