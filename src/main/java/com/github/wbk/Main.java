@@ -12,6 +12,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,18 +22,60 @@ import java.util.Set;
  * @author sentry
  */
 public class Main {
-    private static final String SITES = "https://sina.cn";
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, SQLException {
+        //待处理的连接池
         List<String> linkPool = new ArrayList<>();
-        Set<String> processedLinks = new HashSet<>();
-        linkPool.add(SITES);
+        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:/Software/Java/Intellij/Java_learning/XDML/Crawler/my-Crawler/news",
+                "root", "root");
+        PreparedStatement statement = null;
+        try {
+            statement = conn.prepareStatement("select link FROM LINKS_TO_BE_PROCESSED");
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+                linkPool.add(resultSet.getString(1));
+
+            }
+        } finally {
+            if (statement != null) {
+                statement.close();
+            }
+        }
+        //已经处理的连接池
+        try {
+            statement = conn.prepareStatement("select link FROM LINKS_ALREADY_PROCESSED");
+            ResultSet resultSet = statement.executeQuery();
+            while (resultSet.next()) {
+
+                statement = insertIntoDatabase(conn, statement, resultSet.getString(1), "INSERT INTO LINKS_ALREADY_PROCESSED(LINK)VALUES (?)");
+
+            }
+        } finally {
+            if (statement != null) {
+                statement.close();
+            }
+        }
+
         while (true) {
             if (linkPool.isEmpty()) {
                 break;
             }
+
             String link = linkPool.remove(linkPool.size() - 1);
-            if (processedLinks.contains(link)) {
+            statement = insertIntoDatabase(conn, statement, link, "DELETE FROM LINKS_TO_BE_PROCESSED WHERE LINK = ?");
+            boolean processed = false;
+            try {
+                statement = conn.prepareStatement("select link FROM LINKS_ALREADY_PROCESSED");
+                ResultSet resultSet = statement.executeQuery();
+                while (resultSet.next()) {
+                    processed = false;
+                }
+            } finally {
+                if (statement != null) {
+                    statement.close();
+                }
+            }
+            if (processed) {
                 continue;
             }
             if (isValidLink(link)) {
@@ -40,13 +83,30 @@ public class Main {
                 Elements links = doc.select("a");
                 if (!links.isEmpty()) {
                     for (Element aTag : links) {
-                        linkPool.add(aTag.attr("href"));
+                        String href = aTag.attr("href");
+                        statement = insertIntoDatabase(conn, statement, href, "INSERT INTO LINKS_TO_BE_PROCESSED(LINK) VALUES(?) ");
                     }
                 }
                 storeIntoDatabaseIfItIsNewsPage(doc);
-                processedLinks.add(link);
+                //把已经处理过的链接放入数据库
+                statement = insertIntoDatabase(conn, statement, link, "INSERT INTO LINKS_ALREADY_PROCESSED(LINK)VALUES (?)");
+
+
             }
         }
+    }
+
+    private static PreparedStatement insertIntoDatabase(Connection conn, PreparedStatement statement, String href, String sql) throws SQLException {
+        try {
+            statement = conn.prepareStatement(sql);
+            statement.setString(1, href);
+            statement.executeUpdate();
+        } finally {
+            if (statement != null) {
+                statement.close();
+            }
+        }
+        return statement;
     }
 
     private static void storeIntoDatabaseIfItIsNewsPage(Document doc) {
@@ -74,7 +134,7 @@ public class Main {
     }
 
     private static boolean isValidLink(String link) {
-        return link.contains("news.sina.cn") && !link.contains("passport") || "https://sina.cn".equals(link);
+        return link.contains("news.sina.cn") && link.contains("detail-") && !link.contains("passport") || "https://sina.cn".equals(link);
     }
 }
 
