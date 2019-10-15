@@ -12,18 +12,20 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author sentry
  */
 public class Main {
     public static void main(String[] args) throws IOException, SQLException {
-        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\news", "root", "root");
+        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:/Software/Java/Intellij/Java_learning/XDML/Crawler/my-Crawler/news", "root", "root");
 
         while (true) {
             //待处理的链接池
@@ -115,7 +117,7 @@ public class Main {
     }
 
     private static boolean isValidLink(String link) {
-        return link.contains("news.sina.cn") && !link.contains("passport") || "https://sina.cn".equals(link);
+        return link.contains("news.sina.cn") && !link.contains("passport")&&link.contains("detail-") || "https://sina.cn".equals(link);
     }
 }
 
