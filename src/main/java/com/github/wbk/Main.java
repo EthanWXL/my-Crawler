@@ -17,28 +17,21 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author sentry
  */
 public class Main {
-    public static void main(String[] args) throws IOException, SQLException {
-        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:/Software/Java/Intellij/Java_learning/XDML/Crawler/my-Crawler/news", "root", "root");
 
-        while (true) {
-            //待处理的链接池
-            List<String> linkPool = getUrlFromDatabase(conn, "SELECT LINK FROM LINKS_TO_BE_PROCESSED");
-            //已经处理的连接池
-//            Set<String> processedLinks = new HashSet<>(getUrlFromDatabase(conn,"SELECT LINK FROM LINKS_ALREADY_PROCESSED"));
-            if (linkPool.isEmpty()) {
-                break;
-            }
-            //处理完成后从池子中删除
-            String link = linkPool.remove(linkPool.size() - 1);
-            insertIntoDatabase(conn, link, "DELETE FROM LINKS_TO_BE_PROCESSED WHERE LINK = ?");
-            //询问已处理数据库有没有这个链接
+    private static final String USER = "root";
+    public static final String PASSWORD = "root";
+
+    public static void main(String[] args) throws IOException, SQLException {
+
+        Connection conn = DriverManager.getConnection("jdbc:h2:file:D:/Software/Java/Intellij/Java_learning/XDML/Crawler/my-Crawler/news", USER, PASSWORD);
+        String link;
+        while ((link = getNextLinkThenDelete(conn)) != null) {
             if (isProcessedLink(conn, link)) {
                 continue;
             }
@@ -48,55 +41,83 @@ public class Main {
                 if (!links.isEmpty()) {
                     parseUrlsAndInsertIntoDatabase(conn, links);
                 }
-                storeIntoDatabaseIfItIsNewsPage(doc);
-                insertIntoDatabase(conn, link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
-//                processedLinks.add(link);
+                storeIntoDatabaseIfItIsNewsPage(conn, doc, link);
+                updateDatabase(conn, link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
             }
         }
+    }
+
+    private static String getNextLinkThenDelete(Connection conn) throws SQLException {
+        String link = getNextLinkFromDatabase(conn, "SELECT LINK FROM LINKS_TO_BE_PROCESSED");
+        if (link != null) {
+            updateDatabase(conn, link, "DELETE FROM LINKS_TO_BE_PROCESSED WHERE LINK = ?");
+        }
+        return link;
     }
 
     private static void parseUrlsAndInsertIntoDatabase(Connection conn, Elements links) throws SQLException {
         for (Element aTag : links) {
             String href = aTag.attr("href");
-            insertIntoDatabase(conn, href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
+            updateDatabase(conn, href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
 
         }
     }
 
     private static boolean isProcessedLink(Connection conn, String link) throws SQLException {
+        ResultSet resultSet = null;
         try (PreparedStatement statement = conn.prepareStatement("SELECT LINK FROM LINKS_ALREADY_PROCESSED WHERE LINK = ?")) {
             statement.setString(1, link);
-            ResultSet resultSet = statement.executeQuery();
+            resultSet = statement.executeQuery();
             while (resultSet.next()) {
                 return true;
+            }
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
             }
         }
         return false;
     }
 
-    private static void insertIntoDatabase(Connection conn, String href, String sql) throws SQLException {
+    private static void updateDatabase(Connection conn, String href, String sql) throws SQLException {
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, href);
             statement.executeUpdate();
         }
     }
 
-    private static List<String> getUrlFromDatabase(Connection conn, String sql) throws SQLException {
-        List<String> results = new ArrayList<>();
+    private static String getNextLinkFromDatabase(Connection conn, String sql) throws SQLException {
+        ResultSet resultSet = null;
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
-            ResultSet resultSet = statement.executeQuery();
+            resultSet = statement.executeQuery();
             while (resultSet.next()) {
-                results.add(resultSet.getString(1));
+                return resultSet.getString(1);
+            }
+        } finally {
+            if (resultSet != null) {
+                resultSet.close();
             }
         }
-        return results;
+        return null;
     }
 
-    private static void storeIntoDatabaseIfItIsNewsPage(Document doc) {
+    private static void storeIntoDatabaseIfItIsNewsPage(Connection conn, Document doc, String link) throws SQLException {
         Elements articleTags = doc.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
-                System.out.println(articleTag.child(0).text());
+                String title = articleTag.child(0).text();
+                System.out.println(title);
+                String content = articleTag.select("p").stream().map(Element::text).collect(Collectors
+                        .joining("\n"));
+                try (PreparedStatement statement = conn.prepareStatement
+                        ("INSERT INTO NEWS(TITLE,URL,CONTENT,CREATED_AT,MODIFIED_AT)VALUES (?,?,?,now(),now())")) {
+                    statement.setString(1, title);
+                    statement.setString(2, link);
+                    statement.setString(3, content);
+                    statement.executeUpdate();
+
+                }
+
             }
         }
     }
@@ -117,7 +138,7 @@ public class Main {
     }
 
     private static boolean isValidLink(String link) {
-        return link.contains("news.sina.cn") && !link.contains("passport")&&link.contains("detail-") || "https://sina.cn".equals(link);
+        return link.contains("news.sina.cn") && !link.contains("passport") || "https://sina.cn".equals(link);
     }
 }
 
