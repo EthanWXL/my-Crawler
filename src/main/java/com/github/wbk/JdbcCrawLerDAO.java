@@ -28,16 +28,16 @@ public class JdbcCrawLerDAO implements ICrawlerDAO {
         return link;
     }
 
-    @Override
-    public void updateDatabase(String href, String sql) throws SQLException {
+
+    private void updateDatabase(String href, String sql) throws SQLException {
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, href);
             statement.executeUpdate();
         }
     }
 
-    @Override
-    public String getNextLinkFromDatabase(String sql) throws SQLException {
+
+    private String getNextLinkFromDatabase(String sql) throws SQLException {
         ResultSet resultSet = null;
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             resultSet = statement.executeQuery();
@@ -80,6 +80,25 @@ public class JdbcCrawLerDAO implements ICrawlerDAO {
         }
         return false;
 
+    }
+
+    @Override
+    public void insertProcessedLink(String link) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement
+                ("INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)")) {
+            statement.setString(1, link);
+            statement.executeUpdate();
+        }
+
+    }
+
+    @Override
+    public void insertLinkToBeProcessed(String link) throws SQLException {
+        try (PreparedStatement statement = conn.prepareStatement
+                ("INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)")) {
+            statement.setString(1, link);
+            statement.executeUpdate();
+        }
     }
 
 

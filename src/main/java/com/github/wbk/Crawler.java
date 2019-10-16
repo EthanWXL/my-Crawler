@@ -18,38 +18,44 @@ import java.util.stream.Collectors;
 /**
  * @author sentry
  */
-public class Crawler {
-    private ICrawlerDAO dao = new JdbcCrawLerDAO();
+public class Crawler extends Thread {
+    private ICrawlerDAO dao;
 
-    public void run() throws SQLException, IOException {
-
-        String link;
-        while ((link = dao.getNextLinkThenDelete()) != null) {
-            if (dao.isProcessedLink(link)) {
-                continue;
-            }
-            if (isValidLink(link)) {
-                Document doc = getAndParasHtml(link);
-                Elements links = doc.select("a");
-                if (!links.isEmpty()) {
-                    parseUrlsAndInsertIntoDatabase(links);
-                }
-                storeIntoDatabaseIfItIsNewsPage(doc, link);
-                dao.updateDatabase(link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
-            }
-        }
+    public Crawler(ICrawlerDAO dao) {
+        this.dao = dao;
     }
 
+    @Override
+    public void run() {
 
-    public static void main(String[] args) throws IOException, SQLException {
-        new Crawler().run();
+        try {
+            String link;
+            while ((link = dao.getNextLinkThenDelete()) != null) {
+                if (dao.isProcessedLink(link)) {
+                    continue;
+                }
+                if (isValidLink(link)) {
+                    Document doc = getAndParasHtml(link);
+                    Elements links = doc.select("a");
+                    if (!links.isEmpty()) {
+                        parseUrlsAndInsertIntoDatabase(links);
+                    }
+                    storeIntoDatabaseIfItIsNewsPage(doc, link);
+                    dao.insertProcessedLink(link);
+                    //dao.updateDatabase(link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
 
     public void parseUrlsAndInsertIntoDatabase(Elements links) throws SQLException {
         for (Element aTag : links) {
             String href = aTag.attr("href");
-            dao.updateDatabase(href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
+            dao.insertLinkToBeProcessed(href);
+            //dao.updateDatabase(href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
 
         }
     }
@@ -87,5 +93,7 @@ public class Crawler {
         return link.contains("news.sina.cn") && !link.contains("passport") || "https://sina.cn".equals(link);
 
     }
+
+
 }
 

@@ -1,7 +1,9 @@
-#Wed Oct 16 13:46:30 CST 2019
-D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\JdbcCrawLerDAO.java=1571204768354
-D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\Crawler.java=1571204249209
-D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\Main.java=1571197438361
-D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\ICrawlerDAO.java=1571204302289
+#Wed Oct 16 21:37:48 CST 2019
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\News.java=1571227329400
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\JdbcCrawLerDAO.java=1571232920707
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\Crawler.java=1571232873673
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\MybatisCrawlerDAO.java=1571231993665
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\Main.java=1571233046865
+D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\main\\java\\com\\github\\wbk\\ICrawlerDAO.java=1571232873555
 D\:\\Software\\Java\\Intellij\\Java_learning\\XDML\\Crawler\\my-Crawler\\src\\test\\java\\com\\github\\wbk\\SmokeTest.java=1570842045087
 configuration*?=F01CA1BE4A003693FD04B187647280EDD9A4F908
