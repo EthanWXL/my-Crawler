@@ -30,6 +30,7 @@ public class Crawler extends Thread {
 
         try {
             String link;
+
             while ((link = dao.getNextLinkThenDelete()) != null) {
                 if (dao.isProcessedLink(link)) {
                     continue;
@@ -42,7 +43,6 @@ public class Crawler extends Thread {
                     }
                     storeIntoDatabaseIfItIsNewsPage(doc, link);
                     dao.insertProcessedLink(link);
-                    //dao.updateDatabase(link, "INSERT INTO LINKS_ALREADY_PROCESSED (LINK)VALUES (?)");
                 }
             }
         } catch (Exception e) {
@@ -55,18 +55,16 @@ public class Crawler extends Thread {
         for (Element aTag : links) {
             String href = aTag.attr("href");
             dao.insertLinkToBeProcessed(href);
-            //dao.updateDatabase(href, "INSERT INTO LINKS_TO_BE_PROCESSED (LINK)VALUES (?)");
 
         }
     }
-
 
     public void storeIntoDatabaseIfItIsNewsPage(Document doc, String link) throws SQLException {
         Elements articleTags = doc.select("article");
         if (!articleTags.isEmpty()) {
             for (Element articleTag : articleTags) {
                 String title = articleTag.child(0).text();
-                System.out.println(title);
+//                System.out.println(title);
                 String content = articleTag.select("p").stream().map(Element::text).collect(Collectors
                         .joining("\n"));
                 dao.storeContentIntoDatabase(title, link, content);
@@ -82,7 +80,7 @@ public class Crawler extends Thread {
         System.out.println(link);
 
         HttpGet httpGet = new HttpGet(link);
-        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36\n");
+        httpGet.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36");
         CloseableHttpResponse response = httpclient.execute(httpGet);
         HttpEntity entity1 = response.getEntity();
         String html = EntityUtils.toString(entity1);

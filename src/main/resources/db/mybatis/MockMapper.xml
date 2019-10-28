@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.github.wbk.MockMapper">
+    <select id="selectNews" resultType="com.github.wbk.News">
+        SELECT id,title,url,content,created_at,modified_at FROM news.NEWS
+        LIMIT 2000
+    </select>
+
+    <insert id="insertNews" parameterType="com.github.wbk.News">
+        INSERT INTO news.NEWS(title,url,content,created_at,modified_at)VALUES (#{title},#{url},#{content},#{createdAt},#{modifiedAt})
+    </insert>
+</mapper>
