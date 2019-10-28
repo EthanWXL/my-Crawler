@@ -1,10 +1,27 @@
 package com.github.wbk;
 
+import java.time.Instant;
+
 public class News {
     private int id;
     private String title;
     private String url;
     private String content;
+    private Instant createdAt;
+    private Instant modifiedAt;
+
+    public News(){
+
+    }
+
+    public News(News old) {
+        this.id = old.id;
+        this.title = old.title;
+        this.url = old.url;
+        this.content = old.content;
+        this.createdAt = old.createdAt;
+        this.modifiedAt = old.modifiedAt;
+    }
 
     public News(String title, String url, String content) {
         this.title = title;
@@ -44,4 +61,19 @@ public class News {
         this.url = url;
     }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getModifiedAt() {
+        return modifiedAt;
+    }
+
+    public void setModifiedAt(Instant modifiedAt) {
+        this.modifiedAt = modifiedAt;
+    }
 }

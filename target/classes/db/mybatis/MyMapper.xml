@@ -14,7 +14,7 @@
         WHERE LINK = #{link}
     </select>
     <insert id="insertNews" parameterType="com.github.wbk.News">
-        INSERT INTO NEWS(TITLE,URL,CONTENT)VALUES (#{title},#{url},#{content})
+        INSERT INTO NEWS(TITLE,URL,CONTENT,created_at,modified_at)VALUES (#{title},#{url},#{content},#{createdAt},#{modifiedAt})
     </insert>
     <insert id="insertLink" parameterType="HashMap">
         INSERT INTO

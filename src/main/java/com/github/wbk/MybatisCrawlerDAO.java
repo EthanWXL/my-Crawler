@@ -46,7 +46,7 @@ public class MybatisCrawlerDAO implements ICrawlerDAO {
     }
 
     @Override
-    public void storeContentIntoDatabase(String title, String url, String content) throws SQLException {
+    public void  storeContentIntoDatabase(String title, String url, String content) throws SQLException {
         try (SqlSession session = sqlSessionFactory.openSession(true)) {
             session.insert("com.github.wbk.MyMapper.insertNews", new News(title, url, content));
         }

@@ -28,14 +28,12 @@ public class JdbcCrawLerDAO implements ICrawlerDAO {
         return link;
     }
 
-
     private void updateDatabase(String href, String sql) throws SQLException {
         try (PreparedStatement statement = conn.prepareStatement(sql)) {
             statement.setString(1, href);
             statement.executeUpdate();
         }
     }
-
 
     private String getNextLinkFromDatabase(String sql) throws SQLException {
         ResultSet resultSet = null;
